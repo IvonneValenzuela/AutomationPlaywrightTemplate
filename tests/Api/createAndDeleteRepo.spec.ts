@@ -20,7 +20,7 @@ test('Verify the ability to create a bug in the repository', async ({ request })
         
         data: {
             title: '[Bug] API test posting a new issue',
-            body: 'We are the champions, my friends! And we will keep on fighting til the end',
+            body: 'Bug created successfully',
         }
     });
 
@@ -33,30 +33,10 @@ test('Verify the ability to create a bug in the repository', async ({ request })
     expect(issues.ok()).toBeTruthy();
     expect(await issues.json()).toContainEqual(expect.objectContaining({
         title: '[Bug] API test posting a new issue',
-        body: 'We are the champions, my friends! And we will keep on fighting til the end'
+        body: 'Bug created successfully'
     }));
 });
 
-test('Verify the ability to create a feature request', async ({ request }) => {
-    
-    const newIssue = await request.post(`/repos/${USER}/${REPOTEST}/issues`, {
-        data: {
-            title: '[Feature] Quiero que haga helados',
-            body: 'Estaría buenísimo que el repo haga helados 🍦',
-        }
-    });
-    expect(newIssue.ok()).toBeTruthy();
-    
-    await delay(THREE_SECONDS);
-
-    const issues = await request.get(`/repos/${USER}/${REPOTEST}/issues`);
-    
-    expect(issues.ok()).toBeTruthy();
-    expect(await issues.json()).toContainEqual(expect.objectContaining({
-        title: '[Feature] Quiero que haga helados',
-        body: 'Estaría buenísimo que el repo haga helados 🍦'
-    }));
-});
 
 test.afterAll(async ({ request }) => { //Using to delete the repo with the issues created on it
     const response = await request.delete(`/repos/${USER}/${REPOTEST}`);

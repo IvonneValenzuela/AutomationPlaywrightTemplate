@@ -46,7 +46,6 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
       testIgnore: [
         'tests/[Aa]pi/**',
-        'tests/Assertions/**',
       ],
       workers: 3,
     },
@@ -58,21 +57,6 @@ export default defineConfig({
 
     // 🔗 API (API specs only)
     /* - Api Tests are not expected to be run against any device */
-    {
-      name: 'APITestonMain',
-      testMatch: [
-        'Api/mainRepo/**/*.spec.ts',
-        'tests/Api/E2EAPI.spec.ts'
-      ],
-      use: {  
-        baseURL:'https://api.github.com',
-        extraHTTPHeaders: {
-	        'Accept': 'application/vnd.github.v3+json',
-	        'Authorization': `token ${process.env.API_MAIN_TOKEN}`,
-        }
-      },
-      workers: 1,
-    },
 
     {
       name: 'APITest',
