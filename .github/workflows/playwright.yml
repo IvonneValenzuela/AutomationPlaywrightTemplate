@@ -10,9 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:      
       GH_USER: ${{ vars.GH_USER }}
-      GH_MAIN_REPO: ${{ vars.GH_MAIN_REPO }}
       GH_TEST_REPO: ${{ vars.GH_TEST_REPO }}
-      API_MAIN_TOKEN: ${{ secrets.API_MAIN_TOKEN }}
       API_TEST_TOKEN: ${{ secrets.API_TEST_TOKEN }}
     steps:
     - uses: actions/checkout@v4
