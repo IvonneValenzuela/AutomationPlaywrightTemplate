@@ -1,6 +1,6 @@
 
 import { test, expect } from '@playwright/test';
-import { TemplatePage } from '../PageObjects/TemplatePage';
+import { TemplatePage } from '../../page-objects/template-page';
 
 test.describe('Template - Smoke (POM)', () => {
     let templatePage : TemplatePage;   

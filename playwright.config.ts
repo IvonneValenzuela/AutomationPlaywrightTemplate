@@ -61,8 +61,7 @@ export default defineConfig({
     {
       name: 'APITest',
       testMatch: [
-        'Api/repoLifecycle/**/*.spec.ts',
-        'Api/mock/**/*.spec.ts'
+        'api/**/*.spec.ts',
       ],
       use: {  
         baseURL:'https://api.github.com',
