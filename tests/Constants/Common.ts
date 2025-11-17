@@ -48,3 +48,20 @@ export const pdfTestPath = path.join(__dirname, '../../pdfprueba');
 export async function waitForDomLoaded(page: Page): Promise<void> {
   await page.waitForLoadState('domcontentloaded');
 }
+
+// ────────────────────────────────
+// 🧑‍💻 LOGIN USER
+// ────────────────────────────────
+
+/**
+ * User loging and password to use
+ */
+export const userEmail = process.env.USER_EMAIL ?? '';
+export const userPassword = process.env.USER_PASSWORD ?? '';
+export const userFirstName = process.env.USER_FIRSTNAME ?? '';
+export const userLastName = process.env.USER_LASTNAME ?? '';
+export const userStreet = process.env.USER_STREET ?? '';
+export const userCity = process.env.USER_CITY ?? '';
+export const userState = process.env.USER_STATE ?? '';
+export const userCountry = process.env.USER_COUNTRY ?? '';
+export const userPostcode = process.env.USER_POSTCODE ?? '';
