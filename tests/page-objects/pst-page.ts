@@ -1,20 +1,30 @@
 // This is a template showing the structure of a Page Object Model (POM) for automated tests.
 
 import { type Locator, type Page } from '@playwright/test';
-import { userEmail, userPassword, userFirstName, userLastName, userStreet, userCity, userState, userCountry, userPostcode } from '../constants/common';
+import { GuestUser, BillingAddress } from '../types/form-data-types';
 
 export class PSTPage {
     private readonly url = 'https://www.practicesoftwaretesting.com/';
     private readonly page: Page;
+
+    private parsePrice(text: string | null): number { //TODO: text price 
+        const cleaned = text?.replace(/[^0-9.]/g, '') ?? '0';  // deja solo dígitos y punto
+        return Number(cleaned);
+    }
+
+    private async getPriceFromLocator(locator: Locator): Promise<number> {
+        const text = await locator.textContent();
+        return this.parsePrice(text);
+    }
 
     // Search 
     readonly searchField: Locator
     readonly searchButton: Locator
     readonly searchCaption: Locator
 
-    //Select product
-    readonly selectedItem: Locator
-    readonly productName: Locator
+    //Product listing (results)
+    readonly productCards: Locator;
+    readonly expensiveItemName: Locator;
 
     //Increase Quantity
     readonly changeQuantityButton: Locator
@@ -26,14 +36,13 @@ export class PSTPage {
 
     //Go to cart and check the price
     readonly cartButton: Locator
-    readonly checkTotalPrice: Locator
+    readonly cartUnitPrice: Locator;
+    readonly cartQuantityInput: Locator;
+    readonly cartLineTotal: Locator
+    readonly cartTotalPrice: Locator
 
     //Checkout and login
     readonly checkoutButton: Locator
-    //readonly emailInput: Locator
-    //readonly passwordInput: Locator
-    //readonly loginButton: Locator
-    //readonly loginMessage: Locator
     readonly continueAsGuestButton: Locator
     readonly emailAddressInput: Locator
     readonly firstNameInput: Locator
@@ -62,14 +71,9 @@ export class PSTPage {
         this.searchButton = page.getByRole("button", { name: 'Search' });
         this.searchCaption = page.locator('[data-test="search-caption"]');
 
-        //StextSearchedForHammerelect Product
-        this.selectedItem = page.locator('a.card', { hasText: 'Fiberglass' }); 
-        
-
-        //try to obtain all a.card items in a list of locators, the calculate which's the most expensive one and return the locator item       
-        
-        
-        this.productName = page.locator('[data-test="product-name"]');
+        //Obtein the most expensive item      
+        this.productCards = page.locator('[data-test="search_completed"] a.card');
+        this.expensiveItemName = page.locator('[data-test="product-name"]');
 
         //Increase Quantity
         this.changeQuantityButton = page.getByRole("button", { name: 'Increase quantity' });
@@ -79,19 +83,15 @@ export class PSTPage {
         this.addToCartButton = page.getByRole("button", { name: "Add to cart" });
         this.addedToCartMessageDisplayed = page.getByRole("alert", { name: 'Product added to shopping cart.' });
 
-        //Go to cart and check total
+        //Checking cart info
         this.cartButton = page.locator('[data-test="nav-cart"]');
-        this.checkTotalPrice = page.locator('[data-test="cart-total"]');
+        this.cartUnitPrice = page.locator('[data-test="product-price"]');
+        this.cartQuantityInput = page.locator('[data-test="product-quantity"]');
+        this.cartLineTotal = page.locator('[data-test="line-price"]');
+        this.cartTotalPrice = page.locator('[data-test="cart-total"]');
 
         //Checkout
         this.checkoutButton = page.getByRole('button', { name: 'Proceed to checkout' });
-
-
-        /* //login
-        this.emailInput = page.locator('[data-test="email"]');
-        this.passwordInput = page.locator('[data-test="password"]');
-        this.loginButton = page.getByRole("button", { name: 'Login' });
-        this.loginMessage = page.getByText('you are already logged in'); */
 
         //Continue as Guest
         this.continueAsGuestButton = page.getByRole('tab', { name: 'Continue as Guest' });
@@ -127,9 +127,40 @@ export class PSTPage {
         await this.searchButton.click();
     }
 
-    //Select item
+    //Select most expensive item
+    async waitForProductsToLoad(): Promise<void> {
+        await this.page.waitForSelector('[data-test="search_completed"] a.card', { timeout: 5000 });
+    }
+
     async selectMostExpensiveItem(): Promise<void> {
-        await this.selectedItem.click();
+        const cards = this.productCards;
+        const count = await cards.count();
+
+        if (count === 0) {
+            throw new Error('No products found to select most expensive item.');
+        }
+
+        let maxPrice = -1;
+        let maxIndex = 0;
+
+        for (let i = 0; i < count; i++) {
+            const card = cards.nth(i);
+            const priceText = await card.locator('[data-test="product-price"]').textContent();
+            // Example convert text to number $20.14 --> 20.14
+
+            // const cleaned = priceText?.replace(/[^0-9.]/g, '') ?? '0';     // "20.14"
+            // const numericPrice = Number(cleaned);
+
+            const numericPrice = this.parsePrice(priceText);
+            //const numericPrice = Number(priceText?.replace(/[^0-9.]/g, '') ?? '0');
+
+            if (numericPrice > maxPrice) {
+                maxPrice = numericPrice;//most expensive price
+                maxIndex = i;// most expensive index
+            }
+        }
+
+        await cards.nth(maxIndex).click();
     }
 
     //Change quantity
@@ -149,37 +180,66 @@ export class PSTPage {
         await this.cartButton.click();
     }
 
+    //check the price
+    async getCartUnitPrice(): Promise<number> {
+        return this.getPriceFromLocator(this.cartUnitPrice);
+
+        /* const text = await this.cartUnitPrice.textContent();      // "$20.14"
+        const cleaned = text?.replace(/[^0-9.]/g, '') ?? '0';     // "20.14"
+        return Number(cleaned); */
+    }
+
+    async getCartQuantity(): Promise<number> {
+        const value = await this.cartQuantityInput.inputValue();  // "2"
+        return Number(value);
+    }
+
+    async getCartLineTotal(): Promise<number> {
+
+        return this.getPriceFromLocator(this.cartLineTotal);
+
+        /* const text = await this.cartLineTotal.textContent();      // "$40.28"
+        const cleaned = text?.replace(/[^0-9.]/g, '') ?? '0';
+        return Number(cleaned); */
+    }
+
+    async getCartTotal(): Promise<number> {
+
+        return this.getPriceFromLocator(this.cartTotalPrice);
+
+        /* const text = await this.cartTotalPrice.textContent();    // "$40.28"
+        const cleaned = text?.replace(/[^0-9.]/g, '') ?? '0';
+        return Number(cleaned); */
+    }
+
     //Checkout and login
     async clickOnCheckoutButton(): Promise<void> {
         await this.checkoutButton.click();
     }
-    /* async login() {
-        await this.emailInput.fill(userEmail);
-        await this.passwordInput.fill(userPassword);
-        await this.loginButton.click();
-    } */
+
     async openGuestCheckout(): Promise<void> {
         await this.continueAsGuestButton.click();
     }
 
-    async fillGuestDetails(): Promise<void> {
-        await this.emailAddressInput.fill(userEmail);
-        await this.firstNameInput.fill(userFirstName);
-        await this.lastNameInput.fill(userLastName);
+    async fillGuestDetails(user: GuestUser): Promise<void> {
+        await this.emailAddressInput.fill(user.email);
+        await this.firstNameInput.fill(user.firstName);
+        await this.lastNameInput.fill(user.lastName);
     }
 
     async submitGuestCheckout(): Promise<void> {
         await this.continueAsGuestSubmitButton.click();
-        await this.checkoutButton.click();
     }
 
-    async fillInBillingAddressFields(): Promise<void> {
-        await this.userAddressStreet.fill(userStreet);
-        await this.userAddressCity.fill(userCity);
-        await this.userAddressState.fill(userState);
-        await this.userAddressCountry.fill(userCountry);
-        await this.userAddressPostcode.fill(userPostcode);
+    async fillInBillingAddressFields(address: BillingAddress): Promise<void> {
+        await this.userAddressStreet.waitFor({ state: 'visible' }) //TODO delete this line
+        await this.userAddressStreet.fill(address.street);
+        await this.userAddressCity.fill(address.city);
+        await this.userAddressState.fill(address.state);
+        await this.userAddressCountry.fill(address.country);
+        await this.userAddressPostcode.fill(address.postcode);
     }
+
     async continueToPayment(): Promise<void> {
         await this.checkoutButton.click();
     }
@@ -188,14 +248,7 @@ export class PSTPage {
         await this.paymentMethodSelect.selectOption(method);
     }
 
-    async confirmOrder (): Promise<void> {
+    async confirmOrder(): Promise<void> {
         await this.confirmButton.click();
     }
-
-
-
-
-
-
-
 }
