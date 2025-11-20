@@ -48,3 +48,4 @@ export const pdfTestPath = path.join(__dirname, '../../pdfprueba');
 export async function waitForDomLoaded(page: Page): Promise<void> {
   await page.waitForLoadState('domcontentloaded');
 }
+
