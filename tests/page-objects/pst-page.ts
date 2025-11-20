@@ -1,6 +1,6 @@
 import { type Locator, type Page } from '@playwright/test';
 import { GuestUser, BillingAddress } from '../types/form-data-types';
-import { getPriceFromLocator } from '../helpers/price-helper';
+import { getPriceFromText } from '../helpers/price-helper';
 
 export class PSTPage {
     private readonly url = 'https://www.practicesoftwaretesting.com/';
@@ -132,8 +132,8 @@ export class PSTPage {
         for (let i = 0; i < count; i++) {
             const card = cards.nth(i);
             const priceLocator = card.locator('[data-test="product-price"]');
-            const numericPrice = await getPriceFromLocator(priceLocator);
-
+            const textPrice = await priceLocator.textContent();
+            const numericPrice = await getPriceFromText(textPrice);
 
             if (numericPrice > mostExpensivePrice) {
                 mostExpensivePrice = numericPrice;
@@ -163,7 +163,7 @@ export class PSTPage {
 
     //check the price
     async getCartUnitPrice(): Promise<number> {
-        return getPriceFromLocator(this.cartUnitPrice);
+        return getPriceFromText(await this.cartUnitPrice.textContent());
     }
 
     async getCartQuantity(): Promise<number> {
@@ -172,11 +172,11 @@ export class PSTPage {
     }
 
     async getCartLineTotal(): Promise<number> {
-        return getPriceFromLocator(this.cartLineTotal);
+        return getPriceFromText(await this.cartLineTotal.textContent());
     }
 
     async getCartTotal(): Promise<number> {
-        return getPriceFromLocator(this.cartTotalPrice);
+        return getPriceFromText(await this.cartTotalPrice.textContent());
     }
 
     //Checkout and login
