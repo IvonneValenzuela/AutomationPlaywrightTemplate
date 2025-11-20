@@ -1,5 +1,5 @@
 
-import { test, expect, } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { PSTPage } from '../../page-objects/pst-page';
 
 test.describe('E2E - Purchase flow on Practice Software Testing', () => {
@@ -11,8 +11,7 @@ test.describe('E2E - Purchase flow on Practice Software Testing', () => {
         });
 
         await test.step('Search products by "Hammer"', async () => {
-            await pstPage.fillSearchInput('Hammer');
-            await pstPage.clickOnSearchButton();
+            await pstPage.searchFor('Hammer');
             await expect(pstPage.searchCaption).toContainText('Hammer');
         });
 
@@ -24,7 +23,7 @@ test.describe('E2E - Purchase flow on Practice Software Testing', () => {
 
         await test.step('Change the Quantity from 1 to 2', async () => {
             await pstPage.increaseQuantity(1);
-            await expect(pstPage.quantityInput).toHaveValue('2')
+            await expect(pstPage.quantityInput).toHaveValue('2');
         });
 
         await test.step('Select “Add to cart”', async () => {
@@ -49,26 +48,21 @@ test.describe('E2E - Purchase flow on Practice Software Testing', () => {
         });
 
         await test.step('Select “Proceed to Checkout” and continue as Guest', async () => {
-            await pstPage.clickOnCheckoutButton();
-            await pstPage.openGuestCheckout();
-            await pstPage.fillGuestDetails({
+            await pstPage.checkoutAsGuest({
                 email: 'luna@example.com',
                 firstName: 'Luna',
                 lastName: 'Lara',
             });
-            await pstPage.submitGuestCheckout();
-            await pstPage.clickOnCheckoutButton();
         });
 
         await test.step('Fill in Billing Address details and proceed to checkout', async () => {
-            await pstPage.fillInBillingAddressFields({
+            await pstPage.completeBillingAddress({
                 street: 'Moon St 123',
                 city: 'Universe',
                 state: 'Cosmos',
                 country: 'Galaxy',
                 postcode: '1111',
             });
-            await pstPage.continueToPayment();
         });
 
         await test.step('Select payment method and confirm payment', async () => {

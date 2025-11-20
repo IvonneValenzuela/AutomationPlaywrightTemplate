@@ -1,66 +1,54 @@
-// This is a template showing the structure of a Page Object Model (POM) for automated tests.
-
 import { type Locator, type Page } from '@playwright/test';
 import { GuestUser, BillingAddress } from '../types/form-data-types';
+import { getPriceFromLocator } from '../helpers/price-helper';
 
 export class PSTPage {
     private readonly url = 'https://www.practicesoftwaretesting.com/';
     private readonly page: Page;
 
-    private parsePrice(text: string | null): number { //TODO: text price 
-        const cleaned = text?.replace(/[^0-9.]/g, '') ?? '0';  // deja solo dígitos y punto
-        return Number(cleaned);
-    }
-
-    private async getPriceFromLocator(locator: Locator): Promise<number> {
-        const text = await locator.textContent();
-        return this.parsePrice(text);
-    }
-
     // Search 
-    readonly searchField: Locator
-    readonly searchButton: Locator
-    readonly searchCaption: Locator
+    readonly searchField: Locator;
+    readonly searchButton: Locator;
+    readonly searchCaption: Locator;
 
     //Product listing (results)
     readonly productCards: Locator;
     readonly expensiveItemName: Locator;
 
     //Increase Quantity
-    readonly changeQuantityButton: Locator
-    readonly quantityInput: Locator
+    readonly changeQuantityButton: Locator;
+    readonly quantityInput: Locator;
 
     //Add to cart
-    readonly addToCartButton: Locator
-    readonly addedToCartMessageDisplayed: Locator
+    readonly addToCartButton: Locator;
+    readonly addedToCartMessageDisplayed: Locator;
 
     //Go to cart and check the price
-    readonly cartButton: Locator
+    readonly cartButton: Locator;
     readonly cartUnitPrice: Locator;
     readonly cartQuantityInput: Locator;
-    readonly cartLineTotal: Locator
-    readonly cartTotalPrice: Locator
+    readonly cartLineTotal: Locator;
+    readonly cartTotalPrice: Locator;
 
     //Checkout and login
-    readonly checkoutButton: Locator
-    readonly continueAsGuestButton: Locator
-    readonly emailAddressInput: Locator
-    readonly firstNameInput: Locator
-    readonly lastNameInput: Locator
-    readonly continueAsGuestSubmitButton: Locator
+    readonly checkoutButton: Locator;
+    readonly continueAsGuestButton: Locator;
+    readonly emailAddressInput: Locator;
+    readonly firstNameInput: Locator;
+    readonly lastNameInput: Locator;
+    readonly continueAsGuestSubmitButton: Locator;
 
     //Billing Address details
-    readonly userAddressStreet: Locator
-    readonly userAddressCity: Locator
-    readonly userAddressState: Locator
-    readonly userAddressCountry: Locator
-    readonly userAddressPostcode: Locator
+    readonly billingStreetInput: Locator;
+    readonly billingCityInput: Locator;
+    readonly billingStateInput: Locator;
+    readonly billingCountryInput: Locator;
+    readonly billingPostcodeInput: Locator;
 
     //payment method
-    readonly paymentMethodSelect: Locator
-    readonly confirmButton: Locator
-    readonly paymentSuccessMessage: Locator
-
+    readonly paymentMethodSelect: Locator;
+    readonly confirmButton: Locator;
+    readonly paymentSuccessMessage: Locator;
 
 
     constructor(page: Page) {
@@ -71,7 +59,7 @@ export class PSTPage {
         this.searchButton = page.getByRole("button", { name: 'Search' });
         this.searchCaption = page.locator('[data-test="search-caption"]');
 
-        //Obtein the most expensive item      
+        //Obtain the most expensive item      
         this.productCards = page.locator('[data-test="search_completed"] a.card');
         this.expensiveItemName = page.locator('[data-test="product-name"]');
 
@@ -101,11 +89,11 @@ export class PSTPage {
         this.continueAsGuestSubmitButton = page.locator('[data-test="guest-submit"]');
 
         //Billing Address Info
-        this.userAddressStreet = page.locator('[data-test="street"]');
-        this.userAddressCity = page.locator('[data-test="city"]');
-        this.userAddressState = page.locator('[data-test="state"]');
-        this.userAddressCountry = page.locator('[data-test="country"]');
-        this.userAddressPostcode = page.locator('[data-test="postal_code"]');
+        this.billingStreetInput = page.locator('[data-test="street"]');
+        this.billingCityInput = page.locator('[data-test="city"]');
+        this.billingStateInput = page.locator('[data-test="state"]');
+        this.billingCountryInput = page.locator('[data-test="country"]');
+        this.billingPostcodeInput = page.locator('[data-test="postal_code"]');
 
         //select Payment Method
         this.paymentMethodSelect = page.locator('[data-test="payment-method"]');
@@ -120,16 +108,14 @@ export class PSTPage {
     }
 
     //Search item
-    async fillSearchInput(text: string): Promise<void> {
+    async searchFor(text: string): Promise<void> {
         await this.searchField.fill(text);
-    }
-    async clickOnSearchButton(): Promise<void> {
         await this.searchButton.click();
     }
 
     //Select most expensive item
     async waitForProductsToLoad(): Promise<void> {
-        await this.page.waitForSelector('[data-test="search_completed"] a.card', { timeout: 5000 });
+        await this.productCards.first().waitFor({ state: 'visible', timeout: 5000 });
     }
 
     async selectMostExpensiveItem(): Promise<void> {
@@ -140,27 +126,22 @@ export class PSTPage {
             throw new Error('No products found to select most expensive item.');
         }
 
-        let maxPrice = -1;
-        let maxIndex = 0;
+        let mostExpensivePrice = -1;
+        let mostExpensiveIndex = 0;
 
         for (let i = 0; i < count; i++) {
             const card = cards.nth(i);
-            const priceText = await card.locator('[data-test="product-price"]').textContent();
-            // Example convert text to number $20.14 --> 20.14
+            const priceLocator = card.locator('[data-test="product-price"]');
+            const numericPrice = await getPriceFromLocator(priceLocator);
 
-            // const cleaned = priceText?.replace(/[^0-9.]/g, '') ?? '0';     // "20.14"
-            // const numericPrice = Number(cleaned);
 
-            const numericPrice = this.parsePrice(priceText);
-            //const numericPrice = Number(priceText?.replace(/[^0-9.]/g, '') ?? '0');
-
-            if (numericPrice > maxPrice) {
-                maxPrice = numericPrice;//most expensive price
-                maxIndex = i;// most expensive index
+            if (numericPrice > mostExpensivePrice) {
+                mostExpensivePrice = numericPrice;
+                mostExpensiveIndex = i;
             }
         }
 
-        await cards.nth(maxIndex).click();
+        await cards.nth(mostExpensiveIndex).click();
     }
 
     //Change quantity
@@ -182,34 +163,20 @@ export class PSTPage {
 
     //check the price
     async getCartUnitPrice(): Promise<number> {
-        return this.getPriceFromLocator(this.cartUnitPrice);
-
-        /* const text = await this.cartUnitPrice.textContent();      // "$20.14"
-        const cleaned = text?.replace(/[^0-9.]/g, '') ?? '0';     // "20.14"
-        return Number(cleaned); */
+        return getPriceFromLocator(this.cartUnitPrice);
     }
 
     async getCartQuantity(): Promise<number> {
-        const value = await this.cartQuantityInput.inputValue();  // "2"
+        const value = await this.cartQuantityInput.inputValue();
         return Number(value);
     }
 
     async getCartLineTotal(): Promise<number> {
-
-        return this.getPriceFromLocator(this.cartLineTotal);
-
-        /* const text = await this.cartLineTotal.textContent();      // "$40.28"
-        const cleaned = text?.replace(/[^0-9.]/g, '') ?? '0';
-        return Number(cleaned); */
+        return getPriceFromLocator(this.cartLineTotal);
     }
 
     async getCartTotal(): Promise<number> {
-
-        return this.getPriceFromLocator(this.cartTotalPrice);
-
-        /* const text = await this.cartTotalPrice.textContent();    // "$40.28"
-        const cleaned = text?.replace(/[^0-9.]/g, '') ?? '0';
-        return Number(cleaned); */
+        return getPriceFromLocator(this.cartTotalPrice);
     }
 
     //Checkout and login
@@ -231,18 +198,27 @@ export class PSTPage {
         await this.continueAsGuestSubmitButton.click();
     }
 
-    async fillInBillingAddressFields(address: BillingAddress): Promise<void> {
-        await this.userAddressStreet.waitFor({ state: 'visible' }) //TODO delete this line
-        await this.userAddressStreet.fill(address.street);
-        await this.userAddressCity.fill(address.city);
-        await this.userAddressState.fill(address.state);
-        await this.userAddressCountry.fill(address.country);
-        await this.userAddressPostcode.fill(address.postcode);
+    async checkoutAsGuest(user: GuestUser): Promise<void> {
+        await this.clickOnCheckoutButton();
+        await this.openGuestCheckout();
+        await this.fillGuestDetails(user);
+        await this.submitGuestCheckout();
+        await this.clickOnCheckoutButton();
     }
 
-    async continueToPayment(): Promise<void> {
-        await this.checkoutButton.click();
+    async fillInBillingAddressFields(address: BillingAddress): Promise<void> {
+        await this.billingStreetInput.fill(address.street);
+        await this.billingCityInput.fill(address.city);
+        await this.billingStateInput.fill(address.state);
+        await this.billingCountryInput.fill(address.country);
+        await this.billingPostcodeInput.fill(address.postcode);
     }
+
+    async completeBillingAddress(address: BillingAddress): Promise<void> {
+        await this.fillInBillingAddressFields(address);
+        await this.clickOnCheckoutButton();
+    }
+
 
     async choosePaymentMethod(method: string): Promise<void> {
         await this.paymentMethodSelect.selectOption(method);
