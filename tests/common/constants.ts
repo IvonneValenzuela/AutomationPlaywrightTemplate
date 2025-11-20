@@ -1,13 +1,13 @@
 import path from "path";
 import type { Page } from "@playwright/test";
 
-/* 🧭 Common constants and helpers for Playwright tests
+/* 🧭 Common constants for Playwright tests
  * ---------------------------------------------------
  * This file centralizes all timing and path constants
  * to keep the test suite consistent and easy to maintain.
  */
 // ────────────────────────────────
-// ⏱️ TIME HELPERS - Always define time-based constants in milliseconds (ms)
+// ⏱️ TIME - Always define time-based constants in milliseconds (ms)
 // ────────────────────────────────
 /**
  * Converts seconds to milliseconds.
